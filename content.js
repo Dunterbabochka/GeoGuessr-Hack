@@ -533,6 +533,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     console.log("[GeoHack CONTENT] Получена команда AUTO_GUESS. Отправляем в MAIN...");
     window.postMessage({ type: "__GEOHACK_PLACE_GUESS__", lat: msg.lat, lng: msg.lng }, "*");
     
+    if (msg.autoSubmit === false) {
+      console.log("[GeoHack CONTENT] Auto-submit отключен. Маркер поставлен.");
+      sendResponse({ ok: true });
+      return true;
+    }
+
     setTimeout(() => {
       console.log("[GeoHack CONTENT] Прошло 800мс. Ищем кнопку Guess...");
       let btn = document.querySelector('[data-qa="perform-guess"]');

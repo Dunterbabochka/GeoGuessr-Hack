@@ -258,7 +258,7 @@ async function autoGuess() {
     }, 1500);
   }
 
-  const resp = await sendToTab(tab.id, { type: "AUTO_GUESS", lat: last.lat, lng: last.lng });
+  const resp = await sendToTab(tab.id, { type: "AUTO_GUESS", lat: last.lat, lng: last.lng, autoSubmit: autoSubmitGuess });
   if (!resp) {
     setStatus("Обновите страницу игры (F5)!");
   } else if (!resp.ok) {
@@ -356,6 +356,20 @@ if (autoDetectToggle) {
     const on = autoDetectToggle.checked;
     await chrome.storage.local.set({ autoDetect: on });
     if (on) startAutoDetect(); else stopAutoDetect();
+  });
+}
+
+// ---------- AUTO-SUBMIT ----------
+let autoSubmitGuess = true;
+const autoSubmitToggle = document.getElementById("auto-submit-toggle");
+if (autoSubmitToggle) {
+  chrome.storage.local.get(["autoSubmit"], ({ autoSubmit }) => {
+    autoSubmitGuess = autoSubmit !== false; // Default to true
+    autoSubmitToggle.checked = autoSubmitGuess;
+  });
+  autoSubmitToggle.addEventListener("change", async () => {
+    autoSubmitGuess = autoSubmitToggle.checked;
+    await chrome.storage.local.set({ autoSubmit: autoSubmitGuess });
   });
 }
 
