@@ -6,7 +6,6 @@
 
 **A powerful Chrome extension to assist you in GeoGuessr**
 
-[![Status](https://img.shields.io/badge/Status-Fully_Working-4CAF50?style=for-the-badge)](https://github.com/Dunterbabochka/GeoGuessr-Hack)
 [![License](https://img.shields.io/badge/License-MIT-D32F2F?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![React](https://img.shields.io/badge/React-Fiber_Hooks-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
@@ -16,7 +15,14 @@
 </div>
 
 ---
+<div align="center">
+STATUS:
 
+[![Status](https://img.shields.io/badge/24.04.26-Working-4CAF50?style=for-the-badge)](https://github.com/Dunterbabochka/GeoGuessr-Hack)
+
+</div>
+
+---
 ## 🧠 What is this?
 
 **GeoGuessr Hack** is an advanced Chrome extension that integrates into GeoGuessr's internal API and React state. It allows you to obtain the exact location coordinates (latitude and longitude) and automatically make a guess on the in-game map.
@@ -110,6 +116,6 @@ This project is distributed under the free **MIT** license. See the [LICENSE](LI
 
 Сделано на похуй
 
-*CRACKED BY Dunter*
+*BY Dunter*
 
 </div>
