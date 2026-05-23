@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "GeoGuesser Elite Cheat (GeoGuesser Hack / Cheat)",
+  "version": "5.14.0",
+  "commands": {
+    "trigger-guess": {
+      "suggested_key": { "default": "Alt+H", "mac": "Alt+H" },
+      "description": "Получить координаты текущего раунда GeoGuesser"
+    }
+  },
+  "description": "GeoGuesser Elite Cheat — мгновенно показывает реальное местоположение текущего раунда на мини-карте. Только для тренировок.",
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": [
+    "https://*.geoguessr.com/*",
+    "https://game-server.geoguessr.com/*",
+    "https://nominatim.openstreetmap.org/*"
+  ],
+  "action": {
+    "default_title": "GeoHack",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://*.geoguessr.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["https://*.geoguessr.com/*"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://flagcdn.com; connect-src 'self' https://nominatim.openstreetmap.org"
+  }
+}

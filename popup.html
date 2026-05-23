@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="utf-8" />
+        <title>GeoHack</title>
+        <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg: #0b0820;
+                --bg-2: #15103a;
+                --panel: rgba(26, 19, 64, 0.55);
+                --panel-strong: rgba(26, 19, 64, 0.85);
+                --border: rgba(255, 255, 255, 0.08);
+                --border-strong: rgba(255, 255, 255, 0.14);
+                --text: #f3eefb;
+                --muted: #9b94c4;
+                --accent: #7c5cff;
+                --accent-2: #ff5cb8;
+                --accent-bg: rgba(124, 92, 255, 0.14);
+                --glow:
+                    0 0 24px rgba(124, 92, 255, 0.55),
+                    0 0 48px rgba(255, 92, 184, 0.25);
+                --err: #ff6b8a;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+            }
+
+            body {
+                font-family:
+                    "Hind",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    system-ui,
+                    sans-serif;
+                min-width: 320px;
+                width: 100%;
+                min-height: 100vh;
+                background: var(--bg);
+                color: var(--text);
+                display: flex;
+                flex-direction: column;
+                position: relative;
+                overflow: hidden;
+            }
+
+            /* ---------- ANIMATED MESH BACKGROUND ---------- */
+            .mesh {
+                position: fixed;
+                inset: -20%;
+                z-index: 0;
+                pointer-events: none;
+                filter: blur(60px) saturate(1.2);
+                opacity: 0.85;
+            }
+            .mesh::before,
+            .mesh::after {
+                content: "";
+                position: absolute;
+                border-radius: 50%;
+            }
+            .mesh::before {
+                width: 60%;
+                height: 60%;
+                top: -10%;
+                left: -10%;
+                background: radial-gradient(
+                    circle,
+                    var(--accent) 0%,
+                    transparent 60%
+                );
+                animation: drift1 18s ease-in-out infinite;
+            }
+            .mesh::after {
+                width: 55%;
+                height: 55%;
+                bottom: -10%;
+                right: -15%;
+                background: radial-gradient(
+                    circle,
+                    var(--accent-2) 0%,
+                    transparent 60%
+                );
+                animation: drift2 22s ease-in-out infinite;
+            }
+            .mesh-3 {
+                position: absolute;
+                width: 50%;
+                height: 50%;
+                top: 30%;
+                left: 40%;
+                background: radial-gradient(
+                    circle,
+                    #4dd4ff 0%,
+                    transparent 60%
+                );
+                border-radius: 50%;
+                animation: drift3 26s ease-in-out infinite;
+                opacity: 0.6;
+            }
+            @keyframes drift1 {
+                0%,
+                100% {
+                    transform: translate(0, 0) scale(1);
+                }
+                50% {
+                    transform: translate(30%, 20%) scale(1.2);
+                }
+            }
+            @keyframes drift2 {
+                0%,
+                100% {
+                    transform: translate(0, 0) scale(1);
+                }
+                50% {
+                    transform: translate(-25%, -15%) scale(1.15);
+                }
+            }
+            @keyframes drift3 {
+                0%,
+                100% {
+                    transform: translate(0, 0) scale(1);
+                }
+                50% {
+                    transform: translate(-30%, 25%) scale(1.3);
+                }
+            }
+
+            /* ---------- LAYOUT ---------- */
+            .app {
+                position: relative;
+                z-index: 1;
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                backdrop-filter: blur(2px);
+            }
+
+            /* ---------- HEADER ---------- */
+            .header {
+                padding: 16px 18px 14px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 1px solid var(--border);
+                background: linear-gradient(
+                    180deg,
+                    rgba(11, 8, 32, 0.5),
+                    rgba(11, 8, 32, 0.2)
+                );
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .logo {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+                display: block;
+                box-shadow: 0 4px 14px rgba(45, 212, 168, 0.35);
+            }
+            .brand-text h1 {
+                font-family: "Archivo Black", sans-serif;
+                font-size: 14px;
+                margin: 0;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                background: linear-gradient(90deg, #fff, #d4cbff);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .brand-text .subtitle {
+                font-size: 9.5px;
+                color: var(--muted);
+                letter-spacing: 1.8px;
+                text-transform: uppercase;
+                margin-top: 2px;
+                font-weight: 600;
+            }
+            .icon-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                background: var(--panel);
+                backdrop-filter: blur(10px);
+                border: 1px solid var(--border);
+                color: var(--text);
+                cursor: pointer;
+                display: grid;
+                place-items: center;
+                font-size: 14px;
+                transition: all 0.15s;
+            }
+            .icon-btn:hover {
+                background: var(--panel-strong);
+                border-color: var(--border-strong);
+            }
+
+            /* ---------- CONTENT ---------- */
+            .content {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                flex: 1;
+            }
+
+            /* GUESS button */
+            .guess-btn {
+                width: 100%;
+                padding: 14px;
+                background: linear-gradient(
+                    135deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                border: 0;
+                border-radius: 14px;
+                color: #fff;
+                font-family: "Archivo Black", sans-serif;
+                font-size: 14px;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                transition:
+                    transform 0.08s,
+                    filter 0.15s,
+                    box-shadow 0.25s;
+                box-shadow: var(--glow);
+                position: relative;
+                overflow: hidden;
+            }
+            .guess-btn::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.25),
+                    transparent
+                );
+                transform: translateX(-100%);
+                transition: transform 0.6s;
+            }
+            .guess-btn:hover::before {
+                transform: translateX(100%);
+            }
+            .guess-btn:hover {
+                filter: brightness(1.08);
+                box-shadow:
+                    0 0 32px rgba(124, 92, 255, 0.7),
+                    0 0 64px rgba(255, 92, 184, 0.4);
+            }
+            .guess-btn:active {
+                transform: scale(0.98);
+            }
+            .guess-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .guess-btn .spinner {
+                width: 14px;
+                height: 14px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-top-color: #fff;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                display: none;
+            }
+            .guess-btn.loading .spinner {
+                display: inline-block;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Glass card — uniform info card */
+            .card {
+                background: var(--panel);
+                backdrop-filter: blur(20px) saturate(1.4);
+                -webkit-backdrop-filter: blur(20px) saturate(1.4);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 8px 32px -12px rgba(0, 0, 0, 0.5);
+            }
+            .info-card {
+                display: grid;
+                grid-template-columns: 40px 1fr;
+                gap: 12px;
+                padding: 14px;
+                align-items: center;
+                min-height: 76px;
+            }
+            .info-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                background: linear-gradient(
+                    135deg,
+                    rgba(124, 92, 255, 0.25),
+                    rgba(255, 92, 184, 0.18)
+                );
+                border: 1px solid var(--border-strong);
+                display: grid;
+                place-items: center;
+                font-size: 18px;
+                flex: 0 0 auto;
+            }
+            .info-content {
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                justify-content: center;
+            }
+            .info-label {
+                font-family: "Archivo Black", sans-serif;
+                font-size: 9px;
+                letter-spacing: 2px;
+                color: var(--muted);
+                text-transform: uppercase;
+                line-height: 1;
+            }
+            .info-value {
+                font-size: 13.5px;
+                color: var(--text);
+                font-weight: 600;
+                line-height: 1.35;
+                word-break: break-word;
+            }
+            .info-value.mono {
+                font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                font-size: 12px;
+                letter-spacing: 0.3px;
+                color: var(--accent-2);
+                font-weight: 500;
+            }
+            .info-value.empty {
+                color: var(--muted);
+                font-style: italic;
+                font-weight: 400;
+            }
+
+            /* Flag inside location */
+            .place-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .flag {
+                width: 22px;
+                height: 16px;
+                border-radius: 3px;
+                object-fit: cover;
+                flex: 0 0 auto;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+                background: rgba(255, 255, 255, 0.06);
+            }
+            .flag.hidden {
+                display: none;
+            }
+            .place-name {
+                flex: 1;
+                min-width: 0;
+            }
+
+            /* Map */
+            /* ---- MINI MAP — Royal Purple Google-style ---- */
+            .map-card {
+                flex: 1;
+                min-height: 260px;
+                display: flex;
+                padding: 0;
+                position: relative;
+                border: 1px solid var(--border-strong);
+                box-shadow:
+                    0 8px 32px -12px rgba(0, 0, 0, 0.6),
+                    0 0 0 1px rgba(124, 92, 255, 0.15),
+                    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+            }
+            #map {
+                width: 100%;
+                flex: 1;
+                min-height: 260px;
+                background: #e8eef5;
+                border-radius: 14px;
+            }
+            .leaflet-container {
+                font-family: inherit;
+                background: #e8eef5;
+            }
+
+            /* Subtle vignette so map blends into the panel */
+            .map-card::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                border-radius: 14px;
+                box-shadow: inset 0 0 40px rgba(11, 8, 32, 0.35);
+            }
+
+            /* Map style switcher */
+            .map-style-switcher {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 500;
+                display: flex;
+                gap: 4px;
+                padding: 4px;
+                background: rgba(20, 9, 63, 0.85);
+                backdrop-filter: blur(8px);
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .map-style-switcher button {
+                width: 30px;
+                height: 30px;
+                border: 0;
+                border-radius: 7px;
+                background: transparent;
+                color: #fff;
+                font-size: 15px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.15s;
+                padding: 0;
+            }
+            .map-style-switcher button:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            .map-style-switcher button.active {
+                background: linear-gradient(135deg, #ff3ea5, #6c5cff);
+                box-shadow: 0 2px 6px rgba(108, 92, 255, 0.4);
+            }
+
+            /* Zoom controls — match glass theme */
+            .leaflet-control-zoom {
+                border: 0 !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+                border-radius: 10px !important;
+                overflow: hidden;
+            }
+            .leaflet-control-zoom a {
+                background: rgba(26, 19, 64, 0.92) !important;
+                color: #f3eefb !important;
+                border: 0 !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+                backdrop-filter: blur(8px);
+                font-weight: 700;
+            }
+            .leaflet-control-zoom a:hover {
+                background: rgba(124, 92, 255, 0.4) !important;
+            }
+            .leaflet-control-zoom a:last-child {
+                border-bottom: 0 !important;
+            }
+
+            .leaflet-control-attribution {
+                font-size: 9px !important;
+                background: rgba(11, 8, 32, 0.6) !important;
+                color: var(--muted) !important;
+                backdrop-filter: blur(6px);
+                padding: 2px 6px !important;
+                border-radius: 4px 0 0 0;
+            }
+            .leaflet-control-attribution a {
+                color: var(--accent) !important;
+            }
+            .pulse-marker {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: var(--accent-2);
+                border: 3px solid #fff;
+                box-shadow:
+                    0 0 0 3px rgba(255, 92, 184, 0.4),
+                    0 0 20px rgba(255, 92, 184, 0.7),
+                    0 4px 10px rgba(0, 0, 0, 0.5);
+            }
+            .pulse-marker::before {
+                content: "";
+                position: absolute;
+                inset: -6px;
+                border-radius: 50%;
+                border: 2px solid var(--accent-2);
+                animation: pulse 1.6s ease-out infinite;
+            }
+            @keyframes pulse {
+                0% {
+                    transform: scale(0.5);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(2.4);
+                    opacity: 0;
+                }
+            }
+
+            /* Footer */
+            .footer {
+                padding: 0 16px 16px;
+            }
+            .link-btn {
+                width: 100%;
+                padding: 11px;
+                background: var(--panel);
+                backdrop-filter: blur(10px);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                color: var(--text);
+                font-family: "Hind", sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.15s;
+            }
+            .link-btn:hover:not(:disabled) {
+                background: var(--panel-strong);
+                border-color: var(--accent);
+                box-shadow: 0 0 16px rgba(124, 92, 255, 0.3);
+            }
+            .link-btn:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            .status {
+                font-size: 11.5px;
+                color: var(--err);
+                text-align: center;
+                padding: 6px 0 0;
+                display: none;
+            }
+            .status.show {
+                display: block;
+            }
+
+            /* Guesses badge */
+            .guesses-badge {
+                font-family: "Archivo Black", sans-serif;
+                font-size: 9px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                color: var(--muted);
+                text-align: center;
+                padding: 6px 0 0;
+            }
+            .guesses-badge b {
+                color: var(--accent-2);
+            }
+            .guesses-badge.unlimited b {
+                color: #4dd4ff;
+            }
+
+            /* ---------- SETTINGS PANEL OVERLAY ---------- */
+            .panel {
+                position: fixed;
+                inset: 0;
+                z-index: 10;
+                background: rgba(11, 8, 32, 0.85);
+                backdrop-filter: blur(20px) saturate(1.4);
+                display: none;
+                flex-direction: column;
+                padding: 18px;
+                gap: 14px;
+            }
+            .panel.show {
+                display: flex;
+            }
+            .panel-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .panel-title {
+                font-family: "Archivo Black", sans-serif;
+                font-size: 13px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                background: linear-gradient(90deg, #fff, #d4cbff);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .panel-tabs {
+                display: flex;
+                gap: 6px;
+                padding: 4px;
+                background: var(--panel);
+                border-radius: 10px;
+                border: 1px solid var(--border);
+            }
+            .panel-tab {
+                flex: 1;
+                padding: 8px;
+                background: transparent;
+                border: 0;
+                color: var(--muted);
+                font-family: "Hind", sans-serif;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                border-radius: 7px;
+                transition: all 0.15s;
+                letter-spacing: 0.5px;
+            }
+            .panel-tab.active {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                color: #fff;
+            }
+            .panel-form {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .panel-input {
+                width: 100%;
+                padding: 11px 12px;
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                color: var(--text);
+                font-family: inherit;
+                font-size: 13px;
+            }
+            .panel-input:focus {
+                outline: none;
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.18);
+            }
+            .panel-submit {
+                padding: 12px;
+                background: linear-gradient(
+                    135deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                border: 0;
+                border-radius: 10px;
+                color: #fff;
+                font-family: "Archivo Black", sans-serif;
+                font-size: 12px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                cursor: pointer;
+                box-shadow: var(--glow);
+            }
+            .panel-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .panel-error {
+                font-size: 12px;
+                color: var(--err);
+                text-align: center;
+                min-height: 16px;
+            }
+            /* Toggle setting row */
+            .setting-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 14px;
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+            }
+            .setting-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .setting-title {
+                font-family: "Archivo Black", sans-serif;
+                font-size: 11px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                color: var(--text);
+                margin-bottom: 4px;
+            }
+            .setting-desc {
+                font-size: 11.5px;
+                color: var(--muted);
+                line-height: 1.45;
+            }
+            .switch {
+                position: relative;
+                width: 42px;
+                height: 24px;
+                flex: 0 0 auto;
+                margin-top: 2px;
+            }
+            .switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            .switch .slider {
+                position: absolute;
+                inset: 0;
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid var(--border-strong);
+                border-radius: 999px;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .switch .slider::before {
+                content: "";
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                transition: transform 0.2s;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            }
+            .switch input:checked + .slider {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                border-color: transparent;
+                box-shadow: 0 0 12px rgba(124, 92, 255, 0.5);
+            }
+            .switch input:checked + .slider::before {
+                transform: translateX(18px);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="mesh"><div class="mesh-3"></div></div>
+
+        <div class="app">
+            <div class="header">
+                <div class="brand">
+                    <img class="logo" src="icon128.png" alt="GeoHack" />
+                    <div class="brand-text">
+                        <h1>GeoHack</h1>
+                        <div class="subtitle">CRACKED BY Dunter</div>
+                    </div>
+                </div>
+                <button
+                    class="icon-btn"
+                    id="settings-btn"
+                    data-i18n-title="settings_btn"
+                >
+                    ⚙
+                </button>
+            </div>
+
+            <div class="content">
+                <button id="refresh" class="guess-btn">
+                    <span class="spinner"></span>
+                    <span>📷</span>
+                    <span class="label" data-i18n="guess">Guess</span>
+                </button>
+                <div
+                    class="hotkey-hint"
+                    style="
+                        text-align: center;
+                        font-size: 11px;
+                        color: var(--muted);
+                        letter-spacing: 1.5px;
+                        text-transform: uppercase;
+                        margin-top: -4px;
+                    "
+                >
+                    <span data-i18n="hotkey_label">Hotkey</span>:
+                    <b
+                        style="
+                            color: var(--accent-2);
+                            font-family: &quot;JetBrains Mono&quot;, monospace;
+                        "
+                        >Alt + H</b
+                    >
+                </div>
+
+                <div class="card info-card">
+                    <div class="info-icon">📍</div>
+                    <div class="info-content">
+                        <div class="info-label" data-i18n="location_label">
+                            Location
+                        </div>
+                        <div class="info-value">
+                            <div class="place-row">
+                                <img id="flag" class="flag hidden" alt="" />
+                                <span id="place" data-i18n="open_round"
+                                    >Откройте раунд и нажмите Guess</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card map-card">
+                    <div id="map"></div>
+                    <div class="map-style-switcher" id="map-style-switcher">
+                        <button
+                            type="button"
+                            data-style="voyager"
+                            class="active"
+                            title="Светлая (Google-like)"
+                        >
+                            ☀️
+                        </button>
+                        <button type="button" data-style="dark" title="Тёмная">
+                            🌙
+                        </button>
+                        <button
+                            type="button"
+                            data-style="satellite"
+                            title="Спутник"
+                        >
+                            🛰️
+                        </button>
+                        <span
+                            style="
+                                width: 1px;
+                                background: rgba(255, 255, 255, 0.18);
+                                margin: 2px 2px;
+                            "
+                        ></span>
+                        <button
+                            type="button"
+                            id="borders-toggle"
+                            title="Жирные границы стран"
+                        >
+                            🗺️
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card info-card">
+                    <div class="info-icon">🌐</div>
+                    <div class="info-content">
+                        <div class="info-label" data-i18n="coords_label">
+                            Coordinates
+                        </div>
+                        <div id="coords" class="info-value mono empty">—</div>
+                    </div>
+                </div>
+
+                <div id="status" class="status"></div>
+                <div id="guesses-badge" class="guesses-badge"></div>
+            </div>
+
+            <div class="footer">
+                <button id="gmaps-link" class="link-btn" disabled>
+                    <span>🗺️</span>
+                    <span data-i18n="gmaps_open">Open in Google Maps</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings panel -->
+        <div id="panel" class="panel">
+            <div class="panel-header">
+                <div class="panel-title" data-i18n="settings_btn">
+                    Настройки
+                </div>
+                <button
+                    class="icon-btn"
+                    id="panel-close"
+                    data-i18n-title="close"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <div
+                id="section-automation"
+                style="
+                    display: block;
+                    margin-top: 18px;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--border);
+                "
+            >
+                <div
+                    data-i18n="automation"
+                    style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        letter-spacing: 1.5px;
+                        text-transform: uppercase;
+                        margin-bottom: 8px;
+                    "
+                >
+                    Automation
+                </div>
+                <label class="setting-row" for="auto-detect-toggle">
+                    <div class="setting-info">
+                        <div class="setting-title" data-i18n="auto_detect">
+                            Auto-detect
+                        </div>
+                        <div
+                            class="setting-desc"
+                            data-i18n="auto_detect_desc"
+                        ></div>
+                    </div>
+                    <span class="switch">
+                        <input type="checkbox" id="auto-detect-toggle" />
+                        <span class="slider"></span>
+                    </span>
+                </label>
+            </div>
+
+            <div
+                id="section-streaming"
+                style="
+                    display: block;
+                    margin-top: 14px;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--border);
+                "
+            >
+                <div
+                    data-i18n="streaming"
+                    style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        letter-spacing: 1.5px;
+                        text-transform: uppercase;
+                        margin-bottom: 8px;
+                    "
+                >
+                    Streaming
+                </div>
+                <button
+                    id="obs-mode-btn"
+                    class="panel-submit"
+                    style="
+                        background: var(--panel);
+                        box-shadow: none;
+                        border: 1px solid var(--border-strong);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                    "
+                >
+                    <span>🎥</span><span data-i18n="obs_mode">OBS MODE</span>
+                </button>
+                <p
+                    data-i18n-html="obs_desc"
+                    style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        text-align: center;
+                        margin-top: 10px;
+                        line-height: 1.5;
+                    "
+                ></p>
+            </div>
+
+            <div
+                style="
+                    margin-top: 14px;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--border);
+                "
+            >
+                <div
+                    data-i18n="language"
+                    style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        letter-spacing: 1.5px;
+                        text-transform: uppercase;
+                        margin-bottom: 8px;
+                    "
+                >
+                    Language
+                </div>
+                <div class="setting-row" style="align-items: center">
+                    <div class="setting-info">
+                        <div class="setting-title" data-i18n="language">
+                            Language
+                        </div>
+                        <div
+                            class="setting-desc"
+                            data-i18n="language_desc"
+                        ></div>
+                    </div>
+                    <select
+                        id="lang-select"
+                        class="panel-input"
+                        style="width: auto; min-width: 140px; flex: 0 0 auto"
+                    ></select>
+                </div>
+            </div>
+        </div>
+
+        <script src="vendor/leaflet/leaflet.js"></script>
+        <script src="i18n.js"></script>
+        <script src="popup.js"></script>
+    </body>
+</html>
