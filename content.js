@@ -528,4 +528,40 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
     return true;
   }
+  
+  if (msg && msg.type === "AUTO_GUESS") {
+    console.log("[GeoHack CONTENT] Получена команда AUTO_GUESS. Отправляем в MAIN...");
+    window.postMessage({ type: "__GEOHACK_PLACE_GUESS__", lat: msg.lat, lng: msg.lng }, "*");
+    
+    setTimeout(() => {
+      console.log("[GeoHack CONTENT] Прошло 800мс. Ищем кнопку Guess...");
+      let btn = document.querySelector('[data-qa="perform-guess"]');
+      if (!btn) {
+        console.log("[GeoHack CONTENT] Кнопка по data-qa не найдена, ищем по тексту...");
+        const buttons = Array.from(document.querySelectorAll("button"));
+        btn = buttons.find(b => {
+          if (b.disabled) return false;
+          const text = b.textContent || "";
+          const cls = b.className || "";
+          if (cls.includes("guess-map__guess-button")) return true;
+          if (/guess|сделать выбор/i.test(text)) return true;
+          if (b.querySelector('img[src*="pin"]')) return true;
+          return false;
+        });
+      }
+      
+      if (btn) {
+        console.log("[GeoHack CONTENT] Кнопка найдена, эмулируем клик:", btn);
+        btn.click();
+        sendResponse({ ok: true });
+      } else {
+        console.warn("[GeoHack CONTENT] ОШИБКА: Кнопка Guess не найдена! Пробуем нажать Space...");
+        // Fallback: try pressing Spacebar
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true }));
+        document.body.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true }));
+        sendResponse({ ok: false, error: "Кнопка Guess не найдена. Нажат Space." });
+      }
+    }, 800);
+    return true;
+  }
 });

@@ -38,8 +38,20 @@
 
   /* ---------- Extract position from a panorama instance ---------- */
 
+  // Helper to check if an element is actually visible on the screen
+  function isVisible(el) {
+    if (!el || !el.isConnected) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
   function readPosition(pano) {
     try {
+      // If we saved the container, ensure it's actually visible
+      if (pano.__geohack_container && !isVisible(pano.__geohack_container)) {
+        return null;
+      }
+
       const pos = pano.getPosition();
       if (!pos) return null;
       const lat = typeof pos.lat === "function" ? pos.lat() : pos.lat;
@@ -104,6 +116,9 @@
     function HookedSVP() {
       // Use Reflect.construct to properly call the original constructor
       const instance = Reflect.construct(OrigSVP, arguments, OrigSVP);
+      if (arguments.length > 0 && arguments[0] instanceof Element) {
+        instance.__geohack_container = arguments[0];
+      }
       trackPanorama(instance);
       return instance;
     }
@@ -185,5 +200,82 @@
       broadcastFromPano(pano);
     }
   }, 2000);
+
+  /* ---------- Auto-Guess Marker Placement ---------- */
+  
+  function findMapInstance() {
+    console.log("[GeoHack MAIN] Ищем инстанс карты (Google Maps или Leaflet)...");
+    const containers = Array.from(document.querySelectorAll("[data-qa='map'], [class*='guess-map'], .leaflet-container"));
+    if (containers.length === 0) containers.push(...document.querySelectorAll("div"));
+    console.log(`[GeoHack MAIN] Найдено элементов для проверки: ${containers.length}`);
+    
+    for (const el of containers) {
+      for (const key in el) {
+        if (key.startsWith("__reactFiber$")) {
+          let node = el[key];
+          for (let i = 0; i < 30 && node; i++) {
+            // Collect possible objects that could be the map
+            const possibleMaps = [
+              node.stateNode,
+              node.memoizedProps?.map,
+              node.memoizedState?.map,
+              node.stateNode?.contextValue?.map,
+              node.stateNode?.map
+            ];
+
+            for (const m of possibleMaps) {
+              if (!m) continue;
+              // Check if Leaflet
+              if (typeof m.fire === "function" && typeof m.latLngToContainerPoint === "function") {
+                console.log("[GeoHack MAIN] Найдена карта Leaflet!");
+                return { type: 'leaflet', map: m };
+              }
+              // Check if Google Maps
+              if (typeof m.setCenter === "function" && typeof m.setZoom === "function") {
+                console.log("[GeoHack MAIN] Найдена карта Google Maps!");
+                return { type: 'google', map: m };
+              }
+            }
+            node = node.return;
+          }
+        }
+      }
+    }
+    console.log("[GeoHack MAIN] ОШИБКА: Ни одна карта не найдена!");
+    return null;
+  }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    if (event.data?.type === "__GEOHACK_PLACE_GUESS__") {
+      console.log("[GeoHack MAIN] Получена команда поставить маркер:", event.data);
+      const { lat, lng } = event.data;
+      const found = findMapInstance();
+      
+      if (found) {
+        console.log(`[GeoHack MAIN] Карта (${found.type}) найдена, симулируем клик на координатах:`, lat, lng);
+        if (found.type === 'leaflet') {
+          found.map.fire("click", {
+            latlng: { lat, lng },
+            containerPoint: found.map.latLngToContainerPoint({ lat, lng }),
+            layerPoint: found.map.latLngToLayerPoint({ lat, lng })
+          });
+        } else if (found.type === 'google') {
+          const latLngObj = (window.google && window.google.maps && window.google.maps.LatLng) 
+            ? new window.google.maps.LatLng(lat, lng) 
+            : { lat: () => lat, lng: () => lng };
+          
+          if (window.google && window.google.maps && window.google.maps.event) {
+            window.google.maps.event.trigger(found.map, 'click', { latLng: latLngObj });
+          } else {
+            console.warn("[GeoHack MAIN] google.maps.event недоступен, пытаемся вызвать напрямую если возможно.");
+          }
+        }
+        console.log("[GeoHack MAIN] Клик успешно симулирован.");
+      } else {
+        console.warn("[GeoHack MAIN] ОШИБКА: Невозможно поставить маркер (карта не найдена).");
+      }
+    }
+  });
 
 })();

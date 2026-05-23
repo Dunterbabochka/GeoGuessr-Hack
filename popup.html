@@ -788,11 +788,17 @@
             </div>
 
             <div class="content">
-                <button id="refresh" class="guess-btn">
-                    <span class="spinner"></span>
-                    <span>📷</span>
-                    <span class="label" data-i18n="guess">Guess</span>
-                </button>
+                <div style="display: flex; gap: 12px; width: 100%;">
+                    <button id="refresh" class="guess-btn" style="flex: 1;">
+                        <span class="spinner"></span>
+                        <span>📷</span>
+                        <span class="label" data-i18n="guess">Guess</span>
+                    </button>
+                    <button id="auto-guess-btn" class="guess-btn" disabled style="flex: 1; background: linear-gradient(135deg, #10b981, #34d399);">
+                        <span>🎯</span>
+                        <span class="label">Auto-Guess</span>
+                    </button>
+                </div>
                 <div
                     class="hotkey-hint"
                     style="

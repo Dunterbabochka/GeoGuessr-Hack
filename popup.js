@@ -1,5 +1,6 @@
-﻿/* global L */
+/* global L */
 const refreshBtn = document.getElementById("refresh");
+const autoGuessBtn = document.getElementById("auto-guess-btn");
 const gmapsLinkBtn = document.getElementById("gmaps-link");
 const statusEl = document.getElementById("status");
 const placeEl = document.getElementById("place");
@@ -165,10 +166,12 @@ async function show(data) {
     coordsEl.textContent = "-";
     coordsEl.classList.add("empty");
     gmapsLinkBtn.disabled = true;
+    if (autoGuessBtn) autoGuessBtn.disabled = true;
     return;
   }
   last = data;
   gmapsLinkBtn.disabled = false;
+  if (autoGuessBtn) autoGuessBtn.disabled = false;
 
   const latlng = [data.lat, data.lng];
   if (marker) marker.setLatLng(latlng);
@@ -240,6 +243,31 @@ function openGoogleMaps() {
   });
 }
 
+async function autoGuess() {
+  if (!last) return;
+  const tab = await getActiveTab();
+  if (!tab) return;
+  
+  if (autoGuessBtn) {
+    autoGuessBtn.disabled = true;
+    const originalText = autoGuessBtn.querySelector(".label").textContent;
+    autoGuessBtn.querySelector(".label").textContent = "Wait...";
+    setTimeout(() => {
+      autoGuessBtn.disabled = false;
+      autoGuessBtn.querySelector(".label").textContent = originalText;
+    }, 1500);
+  }
+
+  const resp = await sendToTab(tab.id, { type: "AUTO_GUESS", lat: last.lat, lng: last.lng });
+  if (!resp) {
+    setStatus("Обновите страницу игры (F5)!");
+  } else if (!resp.ok) {
+    setStatus(resp.error || "Ошибка Auto-Guess");
+  } else {
+    setStatus(""); // Clear status on success
+  }
+}
+
 // ---------- Settings panel ----------
 async function renderPanel() {
   const automationEl = document.getElementById("section-automation");
@@ -261,6 +289,7 @@ settingsBtn.addEventListener("click", openPanel);
 panelClose.addEventListener("click", closePanel);
 
 refreshBtn.addEventListener("click", refresh);
+if (autoGuessBtn) autoGuessBtn.addEventListener("click", autoGuess);
 gmapsLinkBtn.addEventListener("click", openGoogleMaps);
 
 chrome.storage.onChanged.addListener((changes, area) => {
