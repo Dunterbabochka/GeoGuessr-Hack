@@ -959,6 +959,15 @@
                         <span class="slider"></span>
                     </span>
                 </label>
+
+                <div class="setting-row" style="margin-top: 10px; flex-direction: column; gap: 8px; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                        <div class="setting-title">Случайная погрешность</div>
+                        <div id="accuracy-value" style="font-size: 11px; color: var(--accent-2); font-weight: bold;">0 км</div>
+                    </div>
+                    <div class="setting-desc" style="margin-bottom: 4px;">Сдвигает Auto-Guess метку на случайное расстояние (до указанного), чтобы скрыть идеальную точность.</div>
+                    <input type="range" id="accuracy-slider" min="0" max="2500" step="50" value="0" style="width: 100%; accent-color: var(--accent);" />
+                </div>
             </div>
 
             <div

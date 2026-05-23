@@ -258,7 +258,30 @@ async function autoGuess() {
     }, 1500);
   }
 
-  const resp = await sendToTab(tab.id, { type: "AUTO_GUESS", lat: last.lat, lng: last.lng, autoSubmit: autoSubmitGuess });
+  let finalLat = last.lat;
+  let finalLng = last.lng;
+
+  if (autoGuessAccuracy > 0) {
+    // Random distance from 0 to max configured (in km)
+    // To make it noticeably off, we can do between half and max, or just 0 to max.
+    // The user asked for "like 100-300km if slider is 300", so let's use:
+    const dist = (0.3 + 0.7 * Math.random()) * autoGuessAccuracy; 
+    const angle = Math.random() * 2 * Math.PI;
+    
+    // 1 deg latitude ~= 111.32 km
+    const deltaLat = (dist * Math.cos(angle)) / 111.32;
+    // 1 deg longitude ~= 111.32 km * cos(lat)
+    const deltaLng = (dist * Math.sin(angle)) / (111.32 * Math.cos(last.lat * Math.PI / 180));
+    
+    finalLat += deltaLat;
+    finalLng += deltaLng;
+    
+    // Clamp coordinates
+    finalLat = Math.max(-90, Math.min(90, finalLat));
+    finalLng = ((finalLng + 180) % 360 + 360) % 360 - 180;
+  }
+
+  const resp = await sendToTab(tab.id, { type: "AUTO_GUESS", lat: finalLat, lng: finalLng, autoSubmit: autoSubmitGuess });
   if (!resp) {
     setStatus("Обновите страницу игры (F5)!");
   } else if (!resp.ok) {
@@ -370,6 +393,28 @@ if (autoSubmitToggle) {
   autoSubmitToggle.addEventListener("change", async () => {
     autoSubmitGuess = autoSubmitToggle.checked;
     await chrome.storage.local.set({ autoSubmit: autoSubmitGuess });
+  });
+}
+
+// ---------- AUTO-GUESS ACCURACY ----------
+let autoGuessAccuracy = 0;
+const accuracySlider = document.getElementById("accuracy-slider");
+const accuracyValue = document.getElementById("accuracy-value");
+
+if (accuracySlider) {
+  chrome.storage.local.get(["autoGuessAccuracy"], ({ autoGuessAccuracy: val }) => {
+    autoGuessAccuracy = Number(val) || 0;
+    accuracySlider.value = autoGuessAccuracy;
+    if (accuracyValue) accuracyValue.textContent = autoGuessAccuracy + " км";
+  });
+
+  accuracySlider.addEventListener("input", () => {
+    autoGuessAccuracy = Number(accuracySlider.value);
+    if (accuracyValue) accuracyValue.textContent = autoGuessAccuracy + " км";
+  });
+
+  accuracySlider.addEventListener("change", async () => {
+    await chrome.storage.local.set({ autoGuessAccuracy });
   });
 }
 
