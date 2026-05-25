@@ -18,7 +18,7 @@
 <div align="center">
 STATUS:
 
-[![Status](https://img.shields.io/badge/25.04.26-Working-4CAF50?style=for-the-badge)](https://github.com/Dunterbabochka/GeoGuessr-Hack)
+[![Status](https://img.shields.io/badge/25.05.26-Working-4CAF50?style=for-the-badge)](https://github.com/Dunterbabochka/GeoGuessr-Hack)
 
 </div>
 
