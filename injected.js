@@ -275,6 +275,36 @@
       } else {
         console.warn("[GeoHack MAIN] ОШИБКА: Невозможно поставить маркер (карта не найдена).");
       }
+    } else if (event.data?.type === "__GEOHACK_SHOW_GLOW__") {
+      const { lat, lng, duration } = event.data;
+      const ms = (duration || 4) * 1000;
+      const found = findMapInstance();
+      if (found) {
+        if (found.type === 'leaflet' && window.L) {
+          const icon = window.L.divIcon({
+            html: '<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,92,184,0.6);box-shadow:0 0 15px #ff5cb8;border:2px solid #fff;animation: pulse 1.5s infinite;"></div>',
+            className: '', iconSize: [24,24], iconAnchor: [12,12]
+          });
+          const marker = window.L.marker([lat, lng], {icon, interactive: false}).addTo(found.map);
+          setTimeout(() => { if (found.map.hasLayer(marker)) found.map.removeLayer(marker); }, ms);
+        } else if (found.type === 'google' && window.google && window.google.maps && window.google.maps.Marker) {
+          const marker = new window.google.maps.Marker({
+            position: new window.google.maps.LatLng(lat, lng),
+            map: found.map,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: "#ff5cb8",
+              fillOpacity: 0.8,
+              strokeWeight: 2,
+              strokeColor: "#ffffff"
+            },
+            clickable: false,
+            zIndex: 999999
+          });
+          setTimeout(() => { marker.setMap(null); }, ms);
+        }
+      }
     }
   });
 

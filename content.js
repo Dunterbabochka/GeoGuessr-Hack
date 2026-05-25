@@ -523,6 +523,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       .then((c) => {
         const label = c.total === 1 ? "google-streetview" : `geoguessr-api (раунд ${c.roundIndex + 1}/${c.total})`;
         save({ lat: c.lat, lng: c.lng }, label);
+        if (inGameGlowEnabled) {
+          window.postMessage({ type: "__GEOHACK_SHOW_GLOW__", lat: c.lat, lng: c.lng, duration: glowDuration }, "*");
+        }
         sendResponse({ ok: true, ...c });
       })
       .catch((e) => sendResponse({ ok: false, error: String(e.message || e) }));
@@ -571,3 +574,148 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return true;
   }
 });
+
+/* ------------------------------------------------------------------ */
+/*  In-Game Overlay (Mini Map)                                        */
+/* ------------------------------------------------------------------ */
+
+let overlayWrapper = null;
+let overlayIframe = null;
+let inGameOverlayEnabled = true;
+let inGameGlowEnabled = true;
+let glowDuration = 4;
+let defaultZoom = 0;
+let lastCoords = null;
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=en&zoom=14`;
+    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const a = data.address || {};
+    const parts = [
+      a.suburb || a.neighbourhood || a.hamlet,
+      a.village || a.town || a.city,
+      a.county,
+      a.state || a.region,
+      a.country,
+    ].filter(Boolean);
+    return parts.length ? parts.join(", ") : data.display_name || null;
+  } catch {
+    return null;
+  }
+}
+
+async function updateOverlay(data) {
+  if (!data || !inGameOverlayEnabled) {
+    if (overlayWrapper) overlayWrapper.style.display = 'none';
+    return;
+  }
+
+  if (!overlayWrapper) {
+    overlayWrapper = document.createElement('div');
+    overlayWrapper.style.cssText = `
+      position: fixed; z-index: 9999999; 
+      top: 20px; right: 20px; 
+      width: 340px; height: 260px; 
+      border: 1px solid rgba(255,255,255,0.2); 
+      border-radius: 10px; overflow: hidden; 
+      background: #0b0820; 
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6); 
+      resize: both; 
+      min-width: 200px; min-height: 150px;
+    `;
+    
+    overlayIframe = document.createElement('iframe');
+    overlayIframe.src = chrome.runtime.getURL('overlay.html');
+    overlayIframe.style.cssText = 'width: 100%; height: 100%; border: none; background: transparent;';
+    
+    overlayWrapper.appendChild(overlayIframe);
+    document.body.appendChild(overlayWrapper);
+    
+    // Allow iframe to load before sending first message
+    overlayIframe.onload = () => {
+      sendCoordsToOverlay(data);
+    };
+  } else {
+    overlayWrapper.style.display = 'block';
+    sendCoordsToOverlay(data);
+  }
+}
+
+async function sendCoordsToOverlay(data) {
+  if (!overlayIframe || !overlayIframe.contentWindow) return;
+  const placeName = await reverseGeocode(data.lat, data.lng);
+  overlayIframe.contentWindow.postMessage({
+    type: '__GEOHACK_UPDATE_LOCATION__',
+    lat: data.lat,
+    lng: data.lng,
+    zoom: defaultZoom,
+    placeName
+  }, '*');
+}
+
+chrome.storage.local.get(["inGameOverlay", "defaultZoom", "lastCoords", "inGameGlow", "glowDuration"], (res) => {
+  if (res.inGameOverlay !== undefined) inGameOverlayEnabled = res.inGameOverlay;
+  if (res.inGameGlow !== undefined) inGameGlowEnabled = res.inGameGlow;
+  if (res.glowDuration !== undefined) glowDuration = Number(res.glowDuration);
+  if (res.defaultZoom !== undefined) defaultZoom = Number(res.defaultZoom);
+  if (res.lastCoords) {
+    lastCoords = res.lastCoords;
+    if (inGameOverlayEnabled && /geoguessr\.com/.test(location.hostname)) {
+      updateOverlay(lastCoords);
+    }
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  
+  if (changes.inGameOverlay) {
+    inGameOverlayEnabled = changes.inGameOverlay.newValue;
+    if (!inGameOverlayEnabled && overlayWrapper) {
+      overlayWrapper.style.display = 'none';
+    } else if (inGameOverlayEnabled && lastCoords) {
+      updateOverlay(lastCoords);
+    }
+  }
+  
+  if (changes.inGameGlow) {
+    inGameGlowEnabled = changes.inGameGlow.newValue;
+  }
+  if (changes.glowDuration) {
+    glowDuration = Number(changes.glowDuration.newValue) || 4;
+  }
+  
+  if (changes.defaultZoom) {
+    defaultZoom = Number(changes.defaultZoom.newValue) || 0;
+  }
+  
+  if (changes.lastCoords) {
+    lastCoords = changes.lastCoords.newValue;
+    if (inGameOverlayEnabled && lastCoords) {
+      updateOverlay(lastCoords);
+    }
+  }
+});
+
+window.addEventListener('message', (event) => {
+  if (!overlayWrapper) return;
+  if (event.data?.type === '__GEOHACK_CLOSE_OVERLAY__') {
+    overlayWrapper.style.display = 'none';
+    // Optionally update setting so it doesn't pop up again this session?
+    // User can re-enable from extension popup.
+  } else if (event.data?.type === '__GEOHACK_DRAG_OVERLAY__') {
+    const rect = overlayWrapper.getBoundingClientRect();
+    let newTop = rect.top + event.data.dy;
+    let newLeft = rect.left + event.data.dx;
+    // Keep mostly on screen
+    newTop = Math.max(0, Math.min(newTop, window.innerHeight - 50));
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 50));
+    overlayWrapper.style.top = newTop + 'px';
+    overlayWrapper.style.left = newLeft + 'px';
+    overlayWrapper.style.right = 'auto'; // Disable right anchoring
+  }
+});
+

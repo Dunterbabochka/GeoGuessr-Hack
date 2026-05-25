@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #0b0820; color: #f3eefb; }
+        #map { width: 100%; height: calc(100% - 30px); background: #e8eef5; }
+        #header { height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; background: rgba(11, 8, 32, 0.9); font-size: 13px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: move; user-select: none; }
+        .close-btn { cursor: pointer; color: #ff6b8a; font-size: 18px; line-height: 1; padding: 0 5px; }
+        .close-btn:hover { color: #ff3ea5; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <span id="title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 30px);">Waiting for location...</span>
+        <span class="close-btn" id="close-btn">&times;</span>
+    </div>
+    <div id="map"></div>
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="overlay.js"></script>
+</body>
+</html>

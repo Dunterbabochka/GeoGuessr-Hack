@@ -177,7 +177,11 @@ async function show(data) {
   if (marker) marker.setLatLng(latlng);
   else marker = L.marker(latlng, { icon: pulseIcon }).addTo(map);
 
-  map.panTo(latlng, { animate: false });
+  if (window.defaultZoom && window.defaultZoom > 0) {
+    map.setView(latlng, window.defaultZoom, { animate: false });
+  } else {
+    map.panTo(latlng, { animate: false });
+  }
 
   coordsEl.textContent = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`;
   coordsEl.classList.remove("empty");
@@ -415,6 +419,70 @@ if (accuracySlider) {
 
   accuracySlider.addEventListener("change", async () => {
     await chrome.storage.local.set({ autoGuessAccuracy });
+  });
+}
+
+// ---------- DEFAULT ZOOM ----------
+window.defaultZoom = 0;
+const zoomSlider = document.getElementById("zoom-slider");
+const zoomValue = document.getElementById("zoom-value");
+if (zoomSlider) {
+  chrome.storage.local.get(["defaultZoom"], ({ defaultZoom: val }) => {
+    window.defaultZoom = Number(val) || 0;
+    zoomSlider.value = window.defaultZoom;
+    if (zoomValue) zoomValue.textContent = window.defaultZoom === 0 ? "Авто" : window.defaultZoom;
+  });
+
+  zoomSlider.addEventListener("input", () => {
+    window.defaultZoom = Number(zoomSlider.value);
+    if (zoomValue) zoomValue.textContent = window.defaultZoom === 0 ? "Авто" : window.defaultZoom;
+  });
+
+  zoomSlider.addEventListener("change", async () => {
+    await chrome.storage.local.set({ defaultZoom: window.defaultZoom });
+  });
+}
+
+// ---------- IN-GAME OVERLAY ----------
+const inGameOverlayToggle = document.getElementById("in-game-overlay-toggle");
+if (inGameOverlayToggle) {
+  chrome.storage.local.get(["inGameOverlay"], ({ inGameOverlay }) => {
+    inGameOverlayToggle.checked = inGameOverlay !== false; // Default to true
+  });
+  inGameOverlayToggle.addEventListener("change", async () => {
+    await chrome.storage.local.set({ inGameOverlay: inGameOverlayToggle.checked });
+  });
+}
+
+// ---------- IN-GAME GLOW ----------
+const inGameGlowToggle = document.getElementById("in-game-glow-toggle");
+if (inGameGlowToggle) {
+  chrome.storage.local.get(["inGameGlow"], ({ inGameGlow }) => {
+    inGameGlowToggle.checked = inGameGlow !== false; // Default to true
+  });
+  inGameGlowToggle.addEventListener("change", async () => {
+    await chrome.storage.local.set({ inGameGlow: inGameGlowToggle.checked });
+  });
+}
+
+let glowDuration = 4;
+const glowDurationSlider = document.getElementById("glow-duration-slider");
+const glowDurationValue = document.getElementById("glow-duration-value");
+
+if (glowDurationSlider) {
+  chrome.storage.local.get(["glowDuration"], ({ glowDuration: val }) => {
+    glowDuration = Number(val) || 4;
+    glowDurationSlider.value = glowDuration;
+    if (glowDurationValue) glowDurationValue.textContent = glowDuration + " сек";
+  });
+
+  glowDurationSlider.addEventListener("input", () => {
+    glowDuration = Number(glowDurationSlider.value);
+    if (glowDurationValue) glowDurationValue.textContent = glowDuration + " сек";
+  });
+
+  glowDurationSlider.addEventListener("change", async () => {
+    await chrome.storage.local.set({ glowDuration });
   });
 }
 

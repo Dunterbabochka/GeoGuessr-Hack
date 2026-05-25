@@ -85,6 +85,37 @@ Click the Gear icon (⚙) in the top right corner of the extension to open setti
 
 ---
 
+## 📋 Changelog
+
+<details>
+<summary><b>v1.0.0 — First release</b></summary>
+
+- Basic functionality
+- "Auto-Guess" system
+- Anti-Ban system for "Auto-Guess" (Случайная погрешность)
+- OBS MODE for streamers
+- And much more...
+
+</details>
+
+<details>
+<summary><b>v1.1.0 — Fixes and comfort</b></summary>
+
+### What's New:
+
+- **In-Game Overlay:**
+   - A floating interactive mini-map with Drag-and-Drop, resizing, and theme sync.
+- **In-Game Glow:**
+   - A temporary glowing marker upon clicking "Guess" (supports Leaflet & Google Maps) with an adjustable fade-out timer.
+- **Default Map Zoom:**
+   - Added a slider (0–18) to set a preferred default zoom level when pinpointing.
+### Bug Fixes:
+
+* Fixed the settings panel scrolling behavior (the background page no longer scrolls).
+</details>
+
+---
+
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Usage |

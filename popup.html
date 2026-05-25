@@ -596,6 +596,7 @@
                 flex-direction: column;
                 padding: 18px;
                 gap: 14px;
+                overflow-y: auto;
             }
             .panel.show {
                 display: flex;
@@ -967,6 +968,46 @@
                     </div>
                     <div class="setting-desc" style="margin-bottom: 4px;">Сдвигает Auto-Guess метку на случайное расстояние (до указанного), чтобы скрыть идеальную точность.</div>
                     <input type="range" id="accuracy-slider" min="0" max="2500" step="50" value="0" style="width: 100%; accent-color: var(--accent);" />
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px; flex-direction: column; gap: 8px; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                        <div class="setting-title">Масштаб карты по умолчанию</div>
+                        <div id="zoom-value" style="font-size: 11px; color: var(--accent-2); font-weight: bold;">Авто</div>
+                    </div>
+                    <div class="setting-desc" style="margin-bottom: 4px;">Приближение карты после нахождения локации. (0 = Авто)</div>
+                    <input type="range" id="zoom-slider" min="0" max="18" step="1" value="0" style="width: 100%; accent-color: var(--accent);" />
+                </div>
+
+                <label class="setting-row" style="margin-top: 10px;" for="in-game-overlay-toggle">
+                    <div class="setting-info">
+                        <div class="setting-title">In-Game Overlay</div>
+                        <div class="setting-desc">Показывать плавающее интерактивное окно с картой прямо на сайте игры.</div>
+                    </div>
+                    <span class="switch">
+                        <input type="checkbox" id="in-game-overlay-toggle" checked />
+                        <span class="slider"></span>
+                    </span>
+                </label>
+
+                <label class="setting-row" style="margin-top: 10px;" for="in-game-glow-toggle">
+                    <div class="setting-info">
+                        <div class="setting-title">Подсветка ответа</div>
+                        <div class="setting-desc">Показывать точку-свечение на оригинальной карте GeoGuessr после нажатия Guess.</div>
+                    </div>
+                    <span class="switch">
+                        <input type="checkbox" id="in-game-glow-toggle" checked />
+                        <span class="slider"></span>
+                    </span>
+                </label>
+
+                <div class="setting-row" style="margin-top: 10px; flex-direction: column; gap: 8px; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                        <div class="setting-title">Время подсветки</div>
+                        <div id="glow-duration-value" style="font-size: 11px; color: var(--accent-2); font-weight: bold;">4 сек</div>
+                    </div>
+                    <div class="setting-desc" style="margin-bottom: 4px;">Сколько времени свечение будет оставаться на карте.</div>
+                    <input type="range" id="glow-duration-slider" min="1" max="15" step="1" value="4" style="width: 100%; accent-color: var(--accent);" />
                 </div>
             </div>
 

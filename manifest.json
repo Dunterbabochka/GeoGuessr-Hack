@@ -33,7 +33,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injected.js"],
+      "resources": ["injected.js", "overlay.html", "overlay.js", "vendor/leaflet/*"],
       "matches": ["https://*.geoguessr.com/*"]
     }
   ],
