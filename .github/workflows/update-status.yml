@@ -1,0 +1,112 @@
+name: Update Status Badge
+
+on:
+  push:
+    paths:
+      - 'status.txt'
+  workflow_dispatch:
+    inputs:
+      status:
+        description: 'Current project status'
+        required: true
+        default: 'Working'
+        type: choice
+        options:
+          - Working
+          - Testing
+          - Patched
+          - Broken
+
+permissions:
+  contents: write
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Fetch at least 2 commits so we can check the previous author
+
+      - name: Get status and date
+        id: info
+        env:
+          TZ: 'Europe/Moscow'
+        run: |
+          # Determine status
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            STATUS="${{ github.event.inputs.status }}"
+            echo "$STATUS" > status.txt
+          else
+            STATUS=$(cat status.txt | xargs)
+          fi
+          
+          # Map status to color
+          COLOR="4CAF50" # Green for Working
+          if [ "$STATUS" = "Testing" ]; then
+            COLOR="FF9800" # Orange
+          elif [ "$STATUS" = "Patched" ] || [ "$STATUS" = "Broken" ]; then
+            COLOR="F44336" # Red
+          fi
+          
+          # Get current date in DD.MM.YY format (e.g., 25.05.26)
+          DATE=$(date +'%d.%m.%y')
+          
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "color=$COLOR" >> $GITHUB_OUTPUT
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+
+      - name: Update README.md
+        env:
+          STATUS: ${{ steps.info.outputs.status }}
+          COLOR: ${{ steps.info.outputs.color }}
+          DATE: ${{ steps.info.outputs.date }}
+        run: |
+          python -c "
+          import os, re
+          status = os.environ['STATUS']
+          color = os.environ['COLOR']
+          date = os.environ['DATE']
+          repo = os.environ['GITHUB_REPOSITORY']
+          
+          with open('README.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+              
+          new_badge = f'[![Status](https://img.shields.io/badge/{date}-{status}-{color}?style=for-the-badge)](https://github.com/{repo})'
+          pattern = r'\[\!\[Status\]\(https://img\.shields\.io/badge/.*?\?style=for-the-badge\)\]\(https://github\.com/.*?\)'
+          
+          if not re.search(pattern, content):
+              print('Warning: Status badge not found in README.md!')
+          else:
+              content = re.sub(pattern, new_badge, content)
+              with open('README.md', 'w', encoding='utf-8') as f:
+                  f.write(content)
+              print('README.md updated successfully.')
+          "
+
+      - name: Commit and push changes
+        env:
+          STATUS: ${{ steps.info.outputs.status }}
+          DATE: ${{ steps.info.outputs.date }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add README.md status.txt
+          
+          if ! git diff --quiet || ! git diff --staged --quiet; then
+            LAST_AUTHOR=$(git log -1 --format="%an")
+            echo "Last commit author: $LAST_AUTHOR"
+            
+            if [ "$LAST_AUTHOR" = "github-actions[bot]" ]; then
+              echo "Last commit was made by the bot. Amending..."
+              git commit --amend -m "chore: update status to $STATUS ($DATE)"
+              git push --force
+            else
+              echo "Last commit was made by user. Creating a new commit..."
+              git commit -m "chore: update status to $STATUS ($DATE)"
+              git push
+            fi
+          else
+            echo "No changes detected."
+          fi
