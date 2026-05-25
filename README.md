@@ -18,7 +18,7 @@
 <div align="center">
 STATUS:
 
-[![Status](https://img.shields.io/badge/24.04.26-Working-4CAF50?style=for-the-badge)](https://github.com/Dunterbabochka/GeoGuessr-Hack)
+[![Status](https://img.shields.io/badge/25.04.26-Working-4CAF50?style=for-the-badge)](https://github.com/Dunterbabochka/GeoGuessr-Hack)
 
 </div>
 
@@ -82,6 +82,9 @@ Click the Gear icon (⚙) in the top right corner of the extension to open setti
 - **Auto-Submit:** Toggles whether Auto-Guess should automatically confirm your guess or just place the marker.
 - **Random Inaccuracy:** A slider to set the maximum offset (up to 2500 km) for Auto-Guess. If set to 500 km, the script will place the marker in a random spot between 150 and 500 km away from the exact location.
 - **OBS Mode:** Opens the helper in a separate window for safe streaming.
+- **In-Game Overlay**
+- **In-Game Glow**
+- **Default Map Zoom**
 
 ---
 
@@ -89,6 +92,9 @@ Click the Gear icon (⚙) in the top right corner of the extension to open setti
 
 <details>
 <summary><b>v1.0.0 — First release</b></summary>
+
+[![GitHub tag (latest by date)](https://img.shields.io/badge/release-v1.0.0-blue?style=flat-square)](https://github.com/Dunterbabochka/GeoGuessr-Hack/releases/tag/v1.0.0)
+[![Git Commit](https://img.shields.io/badge/commit-220cd08-orange?style=flat-square)](https://github.com/Dunterbabochka/GeoGuessr-Hack/commit/220cd08)
 
 - Basic functionality
 - "Auto-Guess" system
@@ -100,6 +106,9 @@ Click the Gear icon (⚙) in the top right corner of the extension to open setti
 
 <details>
 <summary><b>v1.1.0 — Fixes and comfort</b></summary>
+
+[![GitHub tag (latest by date)](https://img.shields.io/badge/release-v1.1.0-blue?style=flat-square)](https://github.com/Dunterbabochka/GeoGuessr-Hack/releases/tag/v1.1.0)
+[![Git Commit](https://img.shields.io/badge/commit-556e517-orange?style=flat-square)](https://github.com/Dunterbabochka/GeoGuessr-Hack/commit/556e517)
 
 ### What's New:
 
